@@ -41,7 +41,7 @@ public:
     void run(http::request<Body, http::basic_fields<Allocator>> req);
 
 // Send a message
-    void send(boost::shared_ptr<std::string const> const &&ss);
+    void send(boost::shared_ptr<std::string const> const &ss);
 
 private:
 
