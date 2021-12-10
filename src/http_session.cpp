@@ -57,6 +57,7 @@ std::string path_cat(beast::string_view base, beast::string_view path)
 
 
 #ifdef BOOST_MSVC
+
     char constexpr path_separator = '\\';
     if (result.back() == path_separator)
     {
@@ -72,8 +73,9 @@ std::string path_cat(beast::string_view base, beast::string_view path)
     }
 
 #else
-    char constexpr path_separator = '/';
-    if (result.back() == path_separator)
+
+    if (char constexpr path_separator = '/';
+        result.back() == path_separator)
     {
         result.resize(result.size() - 1);
     }
@@ -81,4 +83,18 @@ std::string path_cat(beast::string_view base, beast::string_view path)
 
 #endif
     return result;
+}
+
+
+template<class Body, class Allocator, class Send>
+void handle_request(beast::string_view doc_root, http::request<Body, http::basic_fields<Allocator>> &&req, Send &&send)
+{
+
+    // Returns a bad request response
+    auto const bad_request = [&req](beast::string_view target)
+    {
+        http::response<http::string_body> res{http::status::not_found, req.version()};
+        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+        
+    };
 }
