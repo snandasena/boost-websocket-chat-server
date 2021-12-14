@@ -13,7 +13,7 @@
 #include <memory>
 #include <cstdlib>
 
-class http_session
+class http_session: public boost::enable_shared_from_this<http_session>
 {
     beast::tcp_stream stream_;
     beast::flat_buffer buffer_;
