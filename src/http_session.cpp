@@ -103,7 +103,7 @@ void handle_request(beast::string_view doc_root, http::request<Body, http::basic
     };
 
     // Returns a not found response
-    auto const not_found = [&req](std::string_view target)
+    auto const not_found = [&req](beast::string_view target)
     {
         http::response<http::string_body> res{http::status::not_found, req.version()};
         res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
@@ -187,4 +187,78 @@ void handle_request(beast::string_view doc_root, http::request<Body, http::basic
     res.content_length(size);
     res.keep_alive(req.keep_alive());
     return send(std::move(req));
+}
+
+struct http_session::send_lambda
+{
+    http_session &self_;
+
+    explicit send_lambda(http_session &self) : self_(self)
+    {
+
+    }
+
+    template<bool isRequest, class Body, class Fields>
+    void operator()(http::message<isRequest, Body, Fields> &&msg) const
+    {
+        auto sp = boost::make_shared<http::message<isRequest, Body, Fields>>(std::move(msg));
+        auto self = self_.shared_from_this();
+        http::async_write(
+            self_.stream_,
+            *sp,
+            [self, sp](beast::error_code ec, std::size_t bytes)
+            {
+                self->on_write(ec, bytes, sp->need_eof());
+            }
+        );
+    }
+};
+
+http_session::http_session(tcp::socket socket, boost::shared_ptr<shared_state> const &state)
+    : stream_(
+    std::move(socket)), state_(state) {}
+
+void http_session::run()
+{
+    do_read();
+}
+
+void http_session::fail(beast::error_code ec, const char *what)
+{
+    // Don't report on canceled operations
+    if (ec == net::error::operation_aborted)
+    {
+        return;
+    }
+
+    std::cerr << what << " : " << ec.message() << '\n';
+}
+
+void http_session::do_read()
+{
+    // Construct new parser for each message
+    parser_.emplace();
+
+    // Apply a reasonable limit to the allowed size
+    // of the body in bytes to prevent abuse
+    parser_->body_limit(10000);
+
+    // set the timeout
+    stream_.expires_after(std::chrono::seconds(30));
+
+    //read a request
+    http::async_read(stream_, buffer_, parser_->get(),
+                     beast::bind_front_handler(&http_session::on_read,
+                                               shared_from_this()));
+
+}
+
+void http_session::on_read(beast::error_code ec, std::size_t)
+{
+
+}
+
+void http_session::on_write(beast::error_code ec, std::size_t, bool close)
+{
+
 }

@@ -22,7 +22,7 @@ class shared_state
     // This mutex synchronizes all access to sessions_
     std::mutex mutex_;
     // Keep a list of all the connected clients
-    std::unordered_set<websocket_session> sessions_;
+    std::unordered_set<websocket_session*> sessions_;
 
 public:
     explicit shared_state(std::string doc_root);
